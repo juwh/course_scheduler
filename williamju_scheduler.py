@@ -1,4 +1,6 @@
+import re
 import course_dictionary
+from collections import namedtuple
 
 def course_scheduler (course_descriptions, goal_conditions, initial_state):
     """
@@ -14,7 +16,25 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
     State in the state space of the regression planner (conjunction of courses and/or higher-
     level requirements
     List of operators OR list of scheduled courses
+    Search is reflected by a frontier
+
+    Operations:
+    stack variable created, take goal conditions and append the prereqs to the stack
+    now consider the stack variable (while the current state of the stack does not equal initial)
+    pop first condition, check if higher level requirement (a.isdigit()), generate operator
+
+    definition_operator takes operator and current state and generates next state which is appended
+    to the stack
+
+    Ideas:
+    secondary stack "orders" the course/HLR that we are expanding
+    the secondary stack should not replace HLR or courses anyways and continues to push
+    prereqs to the top of the stack
+    IF the course is not valid, the added course is popped and the next prereq is considered (next OR
+    if dysjunction includes multiple entries)
     """
+    Operator = namedtuple('Operator', 'pre_conditions, post_conditions, ScheduledTerm, credits')
+
     solution = {}
     # just add the goals without their prereqs
     for goalCourse in goal_conditions:
