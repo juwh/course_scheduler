@@ -11,37 +11,35 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
 
     Operates by taking a tuple of goal conditions, evaluating in order of the tuple,
     by expanding the prerequisites to fulfill the course
-
-    Two key pieces of information stored:
-    State in the state space of the regression planner (conjunction of courses and/or higher-
-    level requirements
-    List of operators OR list of scheduled courses
-    Search is reflected by a frontier
-
-    Operations:
-    stack variable created, take goal conditions and append the prereqs to the stack
-    now consider the stack variable (while the current state of the stack does not equal initial)
-    pop first condition, check if higher level requirement (a.isdigit()), generate operator
-
-    definition_operator takes operator and current state and generates next state which is appended
-    to the stack
-
-    Ideas:
-    secondary stack "orders" the course/HLR that we are expanding
-    the secondary stack should not replace HLR or courses anyways and continues to push
-    prereqs to the top of the stack
-    IF the course is not valid, the added course is popped and the next prereq is considered (next OR
-    if dysjunction includes multiple entries)
     """
+    state = state_init(course_descriptions, goal_conditions)
+    while set(state) != set(initial_state):
+
+
+def state_init (course_descriptions, goal_conditions):
+    """
+    Creates a stack of stacks of composed of prerequisites for the goal conditions.
+    :param course_descriptions: course catalog dictionary
+    :param goal_conditions: courses that must be included in the generated schedule
+    :return: stack with prerequisites to goal_conditions appended
+    """
+    frontier = []
+    for course in goal_conditions:
+        for prereq in course_descriptions[course].prereqs:
+            frontier.append(prereq)
+    return frontier
+
+def operated_state (operator, state, operators, terms):
+    """
+    Expands the course at the top of the frontier stack to include the top course
+    prerequisites with the operator.
+    :param operator:
+    :param state:
+    :param operators:
+    :param terms:
+    :return: updated frontier variable with the operator applied.
+    """
+def generate_operator (prereqs, course, term, credits):
     Operator = namedtuple('Operator', 'pre_conditions, post_conditions, ScheduledTerm, credits')
 
-    solution = {}
-    # just add the goals without their prereqs
-    for goalCourse in goal_conditions:
-        courseInfo = course_descriptions[goalCourse]
-        # terms should contain a single semester, and year,
-        # not a list of possible semesters
-        solution[goalCourse] = course_dictionary.CourseInfo(courseInfo.credits, ('Fall', 'Senior'), courseInfo.prereqs)
-        print("***************student solution returning solution:************")
-        print(solution)
-    return solution
+def valid_term (course, constraints):
