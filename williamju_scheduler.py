@@ -16,11 +16,12 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
     state_paths = []
     for goal in goal_conditions:
         # for each possible (disjunction) set of prereqs
-        state_instance = goal_conditions.copy()
-        state_instance.remove(goal)
         for prereqs in course_descriptions[goal].prereqs:
+            state_instance = goal_conditions.copy()
+            state_instance.remove(goal)
             state_instance.append(prereqs)
             state_paths.append(state_instance)
+    return state_paths
 
 
 def state_init (course_descriptions, goal_conditions):
@@ -35,3 +36,7 @@ def state_init (course_descriptions, goal_conditions):
         for prereq in course_descriptions[course].prereqs:
             frontier.append(prereq)
     return frontier
+
+def main(argv):
+    test = course_dictionary.create_course_dict()
+    print(course_scheduler(test, [('CS', 'major')], []))
