@@ -11,6 +11,7 @@ MIN_CREDITS_PER_SUMMER_TERM = 0
 
 Course = namedtuple('Course', 'program, designation')
 CourseInfo = namedtuple('CourseInfo', 'credits, terms, prereqs')
+Operator = namedtuple('Operator', 'PRE, EFF, ScheduledTerm, credits')
 
 class ScheduledCourse:
     def __init__(self, course, courseInfo, term):
@@ -91,11 +92,20 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
     # stack of states, each expansion loads all possible expansions of prereqs into the stack
         # continue to evaluate the top of the stack until a failure (can't add prereq)
         # pop this state and evaluate the next one
-    state_paths = state_init(course_descriptions, goal_conditions)
-    current_state = state_paths[len(state_paths)-1] if len(state_paths) != 0 else []
-    print(current_state)
+    operator_stack, state_paths = state_init(course_descriptions, goal_conditions)
+    print(state_paths)
+    print(operator_stack)
     print(is_higher_requirement(('CS', 'major')))
+    print(Semester(3).name)
     # take the first state (goal conditions)
+    operator_state = state_paths[len(state_paths)-1] if len(state_paths) != 0 else []
+    while not operator_state:
+        print(operator_state)
+        top_course = operator_state[len(operator_state)-1]
+        if not initial_state.count(top_course):
+            if scheduled_term(course_descriptions, top_course, operator_stack):
+        else:
+            operator_state.pop()
 
     # take the top condition
     # for the condition to
@@ -107,6 +117,9 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
             # instance of a higher requirement)
                 # if no higher requirement is found through the scheduled courses list, simply place at latest
                 # (Senior Spring)
+
+def scheduled_term (course_descriptions, course, operator_stack):
+    return None
 
 def is_higher_requirement (course):
     return not course[1].isnumeric()
@@ -126,7 +139,13 @@ def state_init (course_descriptions, goal_conditions):
             state_instance.remove(goal)
             state_instance += list(prereqs)
             state_paths.append(state_instance)
-    return state_paths
+    top_course = goal_conditions.copy().pop()
+    top_course_description = course_descriptions[top_course]
+    top_course_prereqs = top_course_description.prereqs
+    top_operator = Operator(top_course_prereqs[len(top_course_prereqs)-1] if len(top_course_prereqs) != 0 else [],
+                            top_course, Term.initFromTermNo(MAX_NUMBER_OF_TERMS), top_course_description.credits)
+    operator_stack = [top_operator]
+    return operator_stack, state_paths
 
 def main(argv):
     test = course_dictionary.create_course_dict()
