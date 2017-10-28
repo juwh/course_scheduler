@@ -1,7 +1,7 @@
 import sys
 
 import course_dictionary
-import williamju_scheduler
+# import williamju_scheduler
 
 
 def main(argv):
