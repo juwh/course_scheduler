@@ -1,4 +1,4 @@
-import re
+import sys
 import course_dictionary
 from collections import namedtuple
 
@@ -13,16 +13,9 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
     # stack of states, each expansion loads all possible expansions of prereqs into the stack
         # continue to evaluate the top of the stack until a failure (can't add prereq)
         # pop this state and evaluate the next one
-    state_paths = []
-    for goal in goal_conditions:
-        # for each possible (disjunction) set of prereqs
-        for prereqs in course_descriptions[goal].prereqs:
-            state_instance = goal_conditions.copy()
-            state_instance.remove(goal)
-            state_instance.append(prereqs)
-            state_paths.append(state_instance)
-    return state_paths
-
+    state_paths = state_init(course_descriptions, goal_conditions)
+    current_state = state_paths[len(state_paths)-1] if len(state_paths) != 0 else []
+    print(state_paths)
 
 def state_init (course_descriptions, goal_conditions):
     """
@@ -31,12 +24,19 @@ def state_init (course_descriptions, goal_conditions):
     :param goal_conditions: courses that must be included in the generated schedule
     :return: stack with prerequisites to goal_conditions appended
     """
-    frontier = []
-    for course in goal_conditions:
-        for prereq in course_descriptions[course].prereqs:
-            frontier.append(prereq)
-    return frontier
+    state_paths = []
+    for goal in goal_conditions:
+        # for each possible (disjunction) set of prereqs
+        for prereqs in course_descriptions[goal].prereqs:
+            state_instance = goal_conditions.copy()
+            state_instance.remove(goal)
+            state_instance += list(prereqs)
+            state_paths.append(state_instance)
+    return state_paths
 
 def main(argv):
     test = course_dictionary.create_course_dict()
-    print(course_scheduler(test, [('CS', 'major')], []))
+    course_scheduler(test, [('CS', 'major'), ('CS', '4269')], [])
+
+if __name__ == "__main__":
+    main(sys.argv)
