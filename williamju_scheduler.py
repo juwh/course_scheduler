@@ -131,16 +131,22 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
             operator_state.pop()
         operator_state = state_stack[len(state_stack) - 1] if len(state_stack) != 0 else []
 
-    # take the top condition
-    # for the condition to
-        # create an operator (latest term) if the condition is not in the initial state; otherwise, "remove" the
-        # course that can be found in the initial state (this would differentiate from the initial state equality
-        # to end the regression scheduler while loop, moving to an empty frontier requirement)
-            # latest term is dependent on maximum credit hours, moves behind higher req (determined by looking through
-            # prereqs of scheduled terms going forwards freshman year fall; the course must fall behind the first
-            # instance of a higher requirement)
-                # if no higher requirement is found through the scheduled courses list, simply place at latest
-                # (Senior Spring)
+    # idea:
+        # load schedule without 18 credit limit
+
+    # every iteration
+        # take the top state from state_stack
+            # take the top condition from operated_state
+                #
+
+                # create an operator (latest term) if the condition is not in the initial state; otherwise, "remove" the
+                # course that can be found in the initial state (this would differentiate from the initial state equality
+                # to end the regression scheduler while loop, moving to an empty frontier requirement)
+                    # latest term is dependent on maximum credit hours, moves behind higher req (determined by looking through
+                    # prereqs of scheduled terms going forwards freshman year fall; the course must fall behind the first
+                    # instance of a higher requirement)
+                        # if no higher requirement is found through the scheduled courses list, simply place at latest
+                        # (Senior Spring)
 
     # in the case that a course reappears as part of the prereqs for another course,
     # identify the earliest point in which that prereq must occur and delete other instances
@@ -151,6 +157,8 @@ def backtrack_operator_stack(operator_stack, top_course):
 
 def scheduled_term (course_descriptions, course, operator_stack):
     return None
+
+def
 
 def is_higher_requirement (course):
     return not course[1].isnumeric()
