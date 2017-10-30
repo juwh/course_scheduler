@@ -23,7 +23,8 @@ def main(argv):
     for key in test:
         if key.program == 'CS':
             print(key, test[key])
-    print(15 + int(test[("CS", "4260")].credits))
+    print(test[("ANTH", "4154")])
+    #print(test[("CS", "major")])
     # williamju_scheduler.course_scheduler (test, [("CS", "major")], [])
     # Prints the entire dictionary.
     # course_dictionary.print_dict(test)
