@@ -1,5 +1,9 @@
-import sys
-import course_dictionary
+"""
+Name: William Ju
+Help Declarations: Used constants and classes given via the autograder.
+
+
+"""
 from collections import namedtuple
 from enum import IntEnum
 
@@ -82,34 +86,26 @@ class Term:
         return "(%s, %s)" % (self.semester, self.year)
 
 def course_scheduler (course_descriptions, goal_conditions, initial_state):
-    # current state
-    # get prereq options
-    # decide semester for expanded state and if valid
-        # find the latest point in which the expanded course can be added
-            # look through current stack of operators
-                # contains current iteration of scheduled courses
-                # and find the earliest instance of
-    # stack of states, each expansion loads all possible expansions of prereqs into the stack
-        # continue to evaluate the top of the stack until a failure (can't add prereq)
-        # pop this state and evaluate the next one
-    tuple_stack = state_init(course_descriptions, goal_conditions)
+    """
+
+    :param course_descriptions:
+    :param goal_conditions:
+    :param initial_state:
+    :return:
+    """
+    tuple_stack = state_init(course_descriptions, goal_conditions, initial_state)
     final_operator_stack = []
-    #print(tuple_stack)
-    #print(is_higher_requirement(('CS', 'major')))
-    #print(Semester(3).name)
-    #print(generate_schedule(tuple_stack[len(tuple_stack)-1][1]))
     # take the top tuple
     top_tuple = tuple_stack[len(tuple_stack)-1] if len(tuple_stack) != 0 else ()
     # take the first state
     operated_state = []
     if top_tuple:
         operated_state = top_tuple[0] if len(top_tuple[0]) != 0 else []
+        final_operator_stack = top_tuple[1]
     # check if stack of states is empty (tried all options)
     while operated_state:
         # get the top course of the top state
         top_course = operated_state[len(operated_state)-1]
-        #print(top_course)
-        final_operator_stack = top_tuple[1]
         # check if the top course exists in the initial state
         if not initial_state.count(top_course):
             # get a valid term for the top course
@@ -122,7 +118,6 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
                 operator_schedule = generate_operator_schedule(final_operator_stack)
             valid_term = scheduled_term(course_descriptions, top_course, operator_schedule)
             if valid_term:
-                #print(valid_term)
                 # there is a valid term so for each possible prereqs options
                 # replace the top course being considered and add it to state_stack
                 operated_state_copy = operated_state.copy()
@@ -152,48 +147,101 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
         else:
             # remove if course already fulfilled by initial state
             operated_state.pop()
-        #print(operated_state)
-        #print(tuple_stack)
         # take the top tuple
         top_tuple = tuple_stack[len(tuple_stack) - 1] if len(tuple_stack) != 0 else ()
         # take the first state
         operated_state = []
         if top_tuple:
             operated_state = top_tuple[0] if len(top_tuple[0]) != 0 else []
-        #print(final_operator_stack)
-        print(generate_schedule(top_tuple[1]))
-        print(generate_schedule_hours(generate_operator_schedule(top_tuple[1])))
-    """
-    keep a list of scheduled courses
-    keep a stack of operators
-    keep a stack of states
-        
-    every iteration
-        take the top state from state_stack
-            take the top condition from operated_state
-                create an operator (latest term) if the condition is not in the initial state; otherwise, "remove" the
-                course that can be found in the initial state (this would differentiate from the initial state equality
-                to end the regression scheduler while loop, moving to an empty frontier requirement)
-                    latest term is dependent on maximum credit hours
-                    moves behind higher req (determined by looking through prereqs of scheduled terms going forwards 
-                    freshman year fall; the course must fall behind the first instance of a higher requirement)
-                        if the course finds itself before a higher requirement, it is placed in that term again
-                        if the course is repeated after the first occurrence of a higher requirement, it should be
-                        removed and inserted in the valid location
-                        if no higher requirement is found through the scheduled courses list, simply place at latest
-                        (Senior Spring)
-                if no valid term exists, pop the state and try the next state (next option from a disjunction)
-                    need to clear operator stack and scheduled courses
-                        per operator,  
-    
-    match every state with an operator stack
+            final_operator_stack = top_tuple[1]
+    if top_tuple:
+        regression_schedule_hours = generate_schedule_hours(generate_operator_schedule(final_operator_stack))
+        final_operator_stack = fill_terms(course_descriptions, regression_schedule_hours, final_operator_stack)
+    return generate_scheduler_output(final_operator_stack)
 
-    in the case that a course reappears as part of the prereqs for another course,
-    identify the earliest point in which that prereq must occur and delete other instances
-    not a concern until a prereq that has been scheduled reappears later
+def fill_terms (course_descriptions, schedule_hours, operator_stack):
     """
+
+    :param course_descriptions:
+    :param schedule_hours:
+    :param operator_stack:
+    :return:
+    """
+    course_list = generate_course_list(operator_stack)
+    for term in schedule_hours:
+        idx = schedule_hours.index(term)
+        min_credits = MIN_CREDITS_PER_SUMMER_TERM if (idx + 1) % 3 == 0 else MIN_CREDITS_PER_NON_SUMMER_TERM
+        max_credits = MAX_CREDITS_PER_SUMMER_TERM if (idx + 1) % 3 == 0 else MAX_CREDITS_PER_NON_SUMMER_TERM
+        if term > 0:
+            while schedule_hours[idx] < min_credits:
+                for course in course_descriptions:
+                    course_description = course_descriptions[course]
+                    if not course_list.count(course) and course_description.prereqs == () \
+                            and schedule_hours[idx] + int(course_description.credits) <= max_credits:
+                        operator_add = Operator(course_description.prereqs, (course.program, course.designation),
+                                                Term.initFromTermNo(idx+1), course_description.credits)
+                        operator_stack.append(operator_add)
+                        course_list.append(course)
+                        schedule_hours[idx] += int(course_description.credits)
+                        break
+    return operator_stack
+
+def generate_scheduler_output (operator_stack):
+    """
+
+    :param operator_stack:
+    :return:
+    """
+    unsorted_dictionary = {}
+    for operator in operator_stack:
+        course_key = Course(operator.EFF[0], operator.EFF[1])
+        course_value = CourseInfo(operator.credits,
+                                  (operator.ScheduledTerm.semester.name, operator.ScheduledTerm.year.name), ())
+        unsorted_dictionary[course_key] = course_value
+    sorted_list = sorted(unsorted_dictionary.items())
+    output_dictionary = {}
+    for key_value in sorted_list:
+        output_dictionary[key_value[0]] = key_value[1]
+    return output_dictionary
+
+def state_init(course_descriptions, goal_conditions, initial_state):
+    """
+
+    :param course_descriptions:
+    :param goal_conditions:
+    :param initial_state:
+    :return:
+    """
+    tuple_stack = []
+    for goal in goal_conditions:
+        # for each possible (disjunction) set of prereqs
+        if not initial_state.count(goal):
+            if course_descriptions[goal].prereqs:
+                for prereqs in course_descriptions[goal].prereqs:
+                    state_instance = goal_conditions.copy()
+                    state_instance.remove(goal)
+                    state_instance += list(prereqs)
+                    operator = Operator(prereqs, goal, Term.initFromTermNo(MAX_NUMBER_OF_TERMS),
+                                        course_descriptions[goal].credits)
+                    operator_state_tuple = state_instance, [operator]
+                    tuple_stack.append(operator_state_tuple)
+            else:
+                state_instance = goal_conditions.copy()
+                state_instance.remove(goal)
+                operator = Operator((), goal, Term.initFromTermNo(MAX_NUMBER_OF_TERMS),
+                                    course_descriptions[goal].credits)
+                operator_state_tuple = state_instance, [operator]
+                tuple_stack.append(operator_state_tuple)
+    return tuple_stack
 
 def scheduled_term (course_descriptions, scheduled_course, operator_schedule):
+    """
+
+    :param course_descriptions:
+    :param scheduled_course:
+    :param operator_schedule:
+    :return:
+    """
     schedule_hours = generate_schedule_hours(operator_schedule)
     #print(schedule_hours)
     # first check for prereq constraints
@@ -225,6 +273,13 @@ def scheduled_term (course_descriptions, scheduled_course, operator_schedule):
         return None
 
 def apply_constraints (course_description, schedule_hours, current_term):
+    """
+
+    :param course_description:
+    :param schedule_hours:
+    :param current_term:
+    :return:
+    """
     while current_term >= 0:
         max_credits = MAX_CREDITS_PER_SUMMER_TERM if (current_term+1)%3 == 0 else MAX_CREDITS_PER_NON_SUMMER_TERM
         if schedule_hours[current_term] + int(course_description.credits) <= max_credits:
@@ -234,7 +289,21 @@ def apply_constraints (course_description, schedule_hours, current_term):
         current_term -= 1
     return None
 
+def is_higher_requirement (course):
+    """
+
+    :param course:
+    :return:
+    """
+    return not course[1].isnumeric()
+
 def in_schedule (operator_schedule, course):
+    """
+
+    :param operator_schedule:
+    :param course:
+    :return:
+    """
     for term in operator_schedule:
         for operator in term:
             # course already scheduled in earliest necessary term
@@ -242,15 +311,12 @@ def in_schedule (operator_schedule, course):
                 return operator.ScheduledTerm
     return None
 
-def generate_schedule_hours (schedule):
-    schedule_hours = []
-    for term in schedule:
-        schedule_hours.append(0)
-        for operator in term:
-            schedule_hours[schedule.index(term)] += int(operator.credits)
-    return schedule_hours
-
 def generate_schedule (operator_stack):
+    """
+
+    :param operator_stack:
+    :return:
+    """
     # list of 11 terms (lists) each containing scheduled course
     schedule = [[] for _ in range(MAX_NUMBER_OF_TERMS)]
     for operator in operator_stack:
@@ -258,41 +324,38 @@ def generate_schedule (operator_stack):
     return schedule
 
 def generate_operator_schedule (operator_stack):
+    """
+
+    :param operator_stack:
+    :return:
+    """
     # list of 11 terms (lists) each containing scheduled course
     schedule = [[] for _ in range(MAX_NUMBER_OF_TERMS)]
     for operator in operator_stack:
         schedule[operator.ScheduledTerm.termNo-1].append(operator)
     return schedule
 
-def is_higher_requirement (course):
-    return not course[1].isnumeric()
-
-def state_init (course_descriptions, goal_conditions):
+def generate_schedule_hours (schedule):
     """
-    Creates a stack of stacks of composed of prerequisites for the goal conditions.
-    :param course_descriptions: course catalog dictionary
-    :param goal_conditions: courses that must be included in the generated schedule
-    :return: stack with prerequisites to goal_conditions appended
+
+    :param schedule:
+    :return:
     """
-    tuple_stack = []
-    for goal in goal_conditions:
-        # for each possible (disjunction) set of prereqs
-        for prereqs in course_descriptions[goal].prereqs:
-            state_instance = goal_conditions.copy()
-            state_instance.remove(goal)
-            state_instance += list(prereqs)
-            operator = Operator(prereqs, goal, Term.initFromTermNo(MAX_NUMBER_OF_TERMS),
-                                course_descriptions[goal].credits)
-            operator_state_tuple = state_instance, [operator]
-            tuple_stack.append(operator_state_tuple)
-    return tuple_stack
+    schedule_hours = []
+    for term in schedule:
+        schedule_hours.append(0)
+        for operator in term:
+            schedule_hours[schedule.index(term)] += int(operator.credits)
+    return schedule_hours
 
-def main(argv):
-    test = course_dictionary.create_course_dict()
-    course_scheduler(test, [('CS', 'major'), ('CS', '4269')], [('CS', '2201')])
-    #course_scheduler(test, [('ANTH', '4345'), ('ARTS', '3600'), ('ASTR', '3600'), ('BME', '4500'), ('CS', '4269'), ('BUS', '2300'), ('CE', '3705'), ('LAT', '3140'), ('JAPN', '3891')], [])
-    #course_scheduler(test, [('CS', '4269'),('CS', '3281')], [])
-    #course_scheduler(test, [('CS', 'major'), ('JAPN', '3891')], [])
+def generate_course_list (operator_stack):
+    """
 
-if __name__ == "__main__":
-    main(sys.argv)
+    :param operator_stack:
+    :return:
+    """
+    course_list = []
+    for operator in operator_stack:
+        course_list.append(operator.EFF)
+    return course_list
+

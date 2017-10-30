@@ -1,7 +1,7 @@
 import sys
 
 import course_dictionary
-# import williamju_scheduler
+import williamju_scheduler
 
 
 def main(argv):
@@ -20,12 +20,15 @@ def main(argv):
     #     if key in [course for prereq in test[key].prereqs for course in prereq]:
     #         print(key)
     # Prints all the CS courses.
-    for key in test:
-        if key.program == 'CS':
-            print(key, test[key])
-    print(test[("ANTH", "4154")])
-    #print(test[("CS", "major")])
-    # williamju_scheduler.course_scheduler (test, [("CS", "major")], [])
+    # for key in test:
+    #     if key.program == 'CS':
+    #         print(key, test[key])
+    #print(test[("ANTH", "4154")].prereqs)
+    #solution = williamju_scheduler.course_scheduler (test, [("CS", "2231"), ("CS", "3251"), ("CS", "statsprobability")], [('MATH', '2810'), ("MATH", "2820"), ("MATH", "3640")])
+    solution = williamju_scheduler.course_scheduler(test, [("CS", "core"), ("CS", "1101")], [])
+    for course in solution:
+        print(course, solution[course])
+    #print(solution)
     # Prints the entire dictionary.
     # course_dictionary.print_dict(test)
     # print(test[('CS', 'open3')])
