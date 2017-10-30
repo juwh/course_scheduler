@@ -168,11 +168,10 @@ def fill_terms (course_descriptions, schedule_hours, operator_stack):
     :return:
     """
     course_list = generate_course_list(operator_stack)
-    for term in schedule_hours:
-        idx = schedule_hours.index(term)
+    for idx in range(len(schedule_hours)):
         min_credits = MIN_CREDITS_PER_SUMMER_TERM if (idx + 1) % 3 == 0 else MIN_CREDITS_PER_NON_SUMMER_TERM
         max_credits = MAX_CREDITS_PER_SUMMER_TERM if (idx + 1) % 3 == 0 else MAX_CREDITS_PER_NON_SUMMER_TERM
-        if term > 0:
+        if schedule_hours[idx] > 0:
             while schedule_hours[idx] < min_credits:
                 for course in course_descriptions:
                     course_description = course_descriptions[course]
@@ -192,17 +191,19 @@ def generate_scheduler_output (operator_stack):
     :param operator_stack:
     :return:
     """
-    unsorted_dictionary = {}
-    for operator in operator_stack:
-        course_key = Course(operator.EFF[0], operator.EFF[1])
-        course_value = CourseInfo(operator.credits,
-                                  (operator.ScheduledTerm.semester.name, operator.ScheduledTerm.year.name), ())
-        unsorted_dictionary[course_key] = course_value
-    sorted_list = sorted(unsorted_dictionary.items())
-    output_dictionary = {}
-    for key_value in sorted_list:
-        output_dictionary[key_value[0]] = key_value[1]
-    return output_dictionary
+    sorted_dictionary = {}
+    unsorted_schedule = generate_operator_schedule(operator_stack)
+    schedule_hours = generate_schedule_hours(unsorted_schedule)
+    print(schedule_hours)
+    for term in unsorted_schedule:
+        sorted_term = sorted(term)
+        for operator in sorted_term:
+            course_key = Course(operator.EFF[0], operator.EFF[1])
+            course_value = CourseInfo(operator.credits,
+                                      (operator.ScheduledTerm.semester.name,
+                                       operator.ScheduledTerm.year.name), operator.PRE)
+            sorted_dictionary[course_key] = course_value
+    return sorted_dictionary
 
 def state_init(course_descriptions, goal_conditions, initial_state):
     """
@@ -243,7 +244,6 @@ def scheduled_term (course_descriptions, scheduled_course, operator_schedule):
     :return:
     """
     schedule_hours = generate_schedule_hours(operator_schedule)
-    #print(schedule_hours)
     # first check for prereq constraints
     for term in operator_schedule:
         for operator in term:
