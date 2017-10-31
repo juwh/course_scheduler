@@ -2,7 +2,9 @@
 Name: William Ju
 Help Declarations: Used constants and classes given via the autograder.
 
-
+The course_scheduler function is a two part heuristic depth first regression planner. The function's primary
+operation is the generation and exploration of state paths. The states are represented as a conjunction of
+courses that must be fulfilled for the path to succeed.
 """
 from collections import namedtuple
 from enum import IntEnum
@@ -16,6 +18,7 @@ MIN_CREDITS_PER_SUMMER_TERM = 0
 Course = namedtuple('Course', 'program, designation')
 CourseInfo = namedtuple('CourseInfo', 'credits, terms, prereqs')
 Operator = namedtuple('Operator', 'PRE, EFF, ScheduledTerm, credits')
+
 
 class ScheduledCourse:
     def __init__(self, course, courseInfo, term):
@@ -39,16 +42,19 @@ class ScheduledCourse:
     def __str__(self):
         return "From str method of ScheduledCourse: course is %s, term is %s" % (self.course, self.term)
 
+
 class Semester(IntEnum):
-  Fall = 1
-  Spring = 2
-  Summer = 3
+    Fall = 1
+    Spring = 2
+    Summer = 3
+
 
 class Year(IntEnum):
-  Frosh = 0
-  Sophomore = 1
-  Junior = 2
-  Senior = 3
+    Frosh = 0
+    Sophomore = 1
+    Junior = 2
+    Senior = 3
+
 
 class Term:
     def __init__(self, semester, year):
@@ -85,7 +91,8 @@ class Term:
         # return "From str method of Term: semester is %s, year is %s" % (self.semester, self.year)
         return "(%s, %s)" % (self.semester, self.year)
 
-def course_scheduler (course_descriptions, goal_conditions, initial_state):
+
+def course_scheduler(course_descriptions, goal_conditions, initial_state):
     """
 
     :param course_descriptions:
@@ -96,7 +103,7 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
     tuple_stack = state_init(course_descriptions, goal_conditions, initial_state)
     final_operator_stack = []
     # take the top tuple
-    top_tuple = tuple_stack[len(tuple_stack)-1] if len(tuple_stack) != 0 else ()
+    top_tuple = tuple_stack[len(tuple_stack) - 1] if len(tuple_stack) != 0 else ()
     # take the first state
     operated_state = []
     if top_tuple:
@@ -105,7 +112,7 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
     # check if stack of states is empty (tried all options)
     while operated_state:
         # get the top course of the top state
-        top_course = operated_state[len(operated_state)-1]
+        top_course = operated_state[len(operated_state) - 1]
         # check if the top course exists in the initial state
         if not initial_state.count(top_course):
             # get a valid term for the top course
@@ -125,14 +132,8 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
                 top_course_prereqs = course_descriptions[top_course].prereqs
                 tuple_stack.pop()
                 if top_course_prereqs:
-                    for prereqs in top_course_prereqs:
-                        state_add = operated_state_copy.copy()
-                        state_add += list(prereqs)
-                        operator_add = Operator(prereqs, top_course, valid_term,
-                                                course_descriptions[top_course].credits)
-                        new_operator_stack = final_operator_stack.copy()
-                        new_operator_stack.append(operator_add)
-                        tuple_stack.append((state_add, new_operator_stack))
+                    tuple_stack = prereq_heuristic(course_descriptions, tuple_stack, final_operator_stack,
+                                                   operated_state_copy, top_course_prereqs, top_course, valid_term)
                 else:
                     state_add = operated_state_copy.copy()
                     operator_add = Operator((), top_course, valid_term, course_descriptions[top_course].credits)
@@ -159,7 +160,41 @@ def course_scheduler (course_descriptions, goal_conditions, initial_state):
         final_operator_stack = fill_terms(course_descriptions, regression_schedule_hours, final_operator_stack)
     return generate_scheduler_output(final_operator_stack)
 
-def fill_terms (course_descriptions, schedule_hours, operator_stack):
+
+def prereq_heuristic(course_descriptions, tuple_stack, operator_stack, state, prerequisites, course, term):
+    """
+
+    :param course_descriptions:
+    :param tuple_stack:
+    :param operator_stack:
+    :param state:
+    :param prerequisites:
+    :param course:
+    :param term:
+    :return:
+    """
+    unordered_heuristic_prereqs = []
+    for prereqs in prerequisites:
+        heuristic_sum = 0
+        for course_tuple in prereqs:
+            if not is_higher_requirement((course_tuple[0], course_tuple[1])):
+                course_designation_top_value = int(course_tuple[1][0])
+                heuristic_sum += course_designation_top_value
+        unordered_heuristic_prereqs.append((heuristic_sum, prereqs))
+    reverse_ordered_heuristic_prereqs = reversed(sorted(unordered_heuristic_prereqs))
+    for heuristic_tuple in reverse_ordered_heuristic_prereqs:
+        heuristic_prereqs = heuristic_tuple[1]
+        state_add = state.copy()
+        state_add += list(heuristic_prereqs)
+        operator_add = Operator(heuristic_prereqs, course, term,
+                                course_descriptions[course].credits)
+        new_operator_stack = operator_stack.copy()
+        new_operator_stack.append(operator_add)
+        tuple_stack.append((state_add, new_operator_stack))
+    return tuple_stack
+
+
+def fill_terms(course_descriptions, schedule_hours, operator_stack):
     """
 
     :param course_descriptions:
@@ -178,14 +213,15 @@ def fill_terms (course_descriptions, schedule_hours, operator_stack):
                     if not course_list.count(course) and course_description.prereqs == () \
                             and schedule_hours[idx] + int(course_description.credits) <= max_credits:
                         operator_add = Operator(course_description.prereqs, (course.program, course.designation),
-                                                Term.initFromTermNo(idx+1), course_description.credits)
+                                                Term.initFromTermNo(idx + 1), course_description.credits)
                         operator_stack.append(operator_add)
                         course_list.append(course)
                         schedule_hours[idx] += int(course_description.credits)
                         break
     return operator_stack
 
-def generate_scheduler_output (operator_stack):
+
+def generate_scheduler_output(operator_stack):
     """
 
     :param operator_stack:
@@ -193,8 +229,6 @@ def generate_scheduler_output (operator_stack):
     """
     sorted_dictionary = {}
     unsorted_schedule = generate_operator_schedule(operator_stack)
-    schedule_hours = generate_schedule_hours(unsorted_schedule)
-    print(schedule_hours)
     for term in unsorted_schedule:
         sorted_term = sorted(term)
         for operator in sorted_term:
@@ -204,6 +238,7 @@ def generate_scheduler_output (operator_stack):
                                        operator.ScheduledTerm.year.name), operator.PRE)
             sorted_dictionary[course_key] = course_value
     return sorted_dictionary
+
 
 def state_init(course_descriptions, goal_conditions, initial_state):
     """
@@ -235,7 +270,8 @@ def state_init(course_descriptions, goal_conditions, initial_state):
                 tuple_stack.append(operator_state_tuple)
     return tuple_stack
 
-def scheduled_term (course_descriptions, scheduled_course, operator_schedule):
+
+def scheduled_term(course_descriptions, scheduled_course, operator_schedule):
     """
 
     :param course_descriptions:
@@ -251,14 +287,14 @@ def scheduled_term (course_descriptions, scheduled_course, operator_schedule):
                 if prereq == scheduled_course:
                     if is_higher_requirement(operator.EFF):
                         constrained_term = apply_constraints(course_descriptions[scheduled_course],
-                                                           schedule_hours, operator_schedule.index(term))
+                                                             schedule_hours, operator_schedule.index(term))
                         if constrained_term:
                             return Term.initFromTermNo(constrained_term)
                         else:
                             return None
                     else:
                         constrained_term = apply_constraints(course_descriptions[scheduled_course],
-                                                           schedule_hours, operator_schedule.index(term)-1)
+                                                             schedule_hours, operator_schedule.index(term) - 1)
                         if constrained_term:
                             return Term.initFromTermNo(constrained_term)
                         else:
@@ -266,13 +302,14 @@ def scheduled_term (course_descriptions, scheduled_course, operator_schedule):
     # if no prereq constraint apply, find the first non-18+ term
     current_term = MAX_NUMBER_OF_TERMS - 1
     constrained_term = apply_constraints(course_descriptions[scheduled_course],
-                                       schedule_hours, current_term)
+                                         schedule_hours, current_term)
     if constrained_term:
         return Term.initFromTermNo(constrained_term)
     else:
         return None
 
-def apply_constraints (course_description, schedule_hours, current_term):
+
+def apply_constraints(course_description, schedule_hours, current_term):
     """
 
     :param course_description:
@@ -281,15 +318,16 @@ def apply_constraints (course_description, schedule_hours, current_term):
     :return:
     """
     while current_term >= 0:
-        max_credits = MAX_CREDITS_PER_SUMMER_TERM if (current_term+1)%3 == 0 else MAX_CREDITS_PER_NON_SUMMER_TERM
+        max_credits = MAX_CREDITS_PER_SUMMER_TERM if (current_term + 1) % 3 == 0 else MAX_CREDITS_PER_NON_SUMMER_TERM
         if schedule_hours[current_term] + int(course_description.credits) <= max_credits:
             for available_term in course_description.terms:
-                if Term.initFromTermNo(current_term+1).semester.name == available_term:
-                    return current_term+1
+                if Term.initFromTermNo(current_term + 1).semester.name == available_term:
+                    return current_term + 1
         current_term -= 1
     return None
 
-def is_higher_requirement (course):
+
+def is_higher_requirement(course):
     """
 
     :param course:
@@ -297,7 +335,8 @@ def is_higher_requirement (course):
     """
     return not course[1].isnumeric()
 
-def in_schedule (operator_schedule, course):
+
+def in_schedule(operator_schedule, course):
     """
 
     :param operator_schedule:
@@ -311,7 +350,8 @@ def in_schedule (operator_schedule, course):
                 return operator.ScheduledTerm
     return None
 
-def generate_schedule (operator_stack):
+
+def generate_schedule(operator_stack):
     """
 
     :param operator_stack:
@@ -323,7 +363,8 @@ def generate_schedule (operator_stack):
         schedule[operator.ScheduledTerm.termNo - 1].append(operator.EFF)
     return schedule
 
-def generate_operator_schedule (operator_stack):
+
+def generate_operator_schedule(operator_stack):
     """
 
     :param operator_stack:
@@ -332,10 +373,11 @@ def generate_operator_schedule (operator_stack):
     # list of 11 terms (lists) each containing scheduled course
     schedule = [[] for _ in range(MAX_NUMBER_OF_TERMS)]
     for operator in operator_stack:
-        schedule[operator.ScheduledTerm.termNo-1].append(operator)
+        schedule[operator.ScheduledTerm.termNo - 1].append(operator)
     return schedule
 
-def generate_schedule_hours (schedule):
+
+def generate_schedule_hours(schedule):
     """
 
     :param schedule:
@@ -348,7 +390,8 @@ def generate_schedule_hours (schedule):
             schedule_hours[schedule.index(term)] += int(operator.credits)
     return schedule_hours
 
-def generate_course_list (operator_stack):
+
+def generate_course_list(operator_stack):
     """
 
     :param operator_stack:
@@ -358,4 +401,3 @@ def generate_course_list (operator_stack):
     for operator in operator_stack:
         course_list.append(operator.EFF)
     return course_list
-

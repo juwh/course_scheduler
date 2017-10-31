@@ -25,7 +25,7 @@ def main(argv):
     #         print(key, test[key])
     #print(test[("ANTH", "4154")].prereqs)
     #solution = williamju_scheduler.course_scheduler (test, [("CS", "2231"), ("CS", "3251"), ("CS", "statsprobability")], [('MATH', '2810'), ("MATH", "2820"), ("MATH", "3640")])
-    solution = williamju_scheduler.course_scheduler(test, [("CS", "core"), ("CS", "1101")], [])
+    solution = williamju_scheduler.course_scheduler(test, [("CS", "major"), ("CS", "4269")], [])
     for course in solution:
         print(course, solution[course])
     #print(solution)
