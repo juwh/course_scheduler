@@ -4,8 +4,29 @@ Help Declarations: Used constants and classes given via the autograder.
 
 The course_scheduler function is a two part heuristic depth first regression planner. The function's primary
 operation is the generation and exploration of state paths. The states are represented as a conjunction of
-courses that must be fulfilled for the path to succeed.
+courses that must be fulfilled for the path to succeed. These states are stored as a stack to allow for natural
+depth-first search to occur. The primary loop of the scheduler ends once the current state is empty. This can
+occur either by the popping of all possible states, meaning that all paths were exhausted without a valid solution,
+or by expanding all the states to the point of no prerequisites. This should eventually end with an empty current
+state. An operator stack is associated with each state. This stack can be used to generate the course schedule
+and is a representation of the schedule at a current state. If a state is popped, its associated operator stack
+is also removed. States and operator stacks are linked as tuples within a tuple stack. The goal conditions and
+operator stack are initialized before running through the primary loop. The initial state removes all instances of
+contained courses in the current state as these are not rescheduled. The primary loop expands the top course of
+the state stack and adds all possible paths as determined by the disjunction of prerequisites. Once the schedule
+finishes with a valid schedule, the second part of filling the schedule to fulfill the minimum credit hours
+requirement occurs. The schedule is then sorted by term order and by alphabetical order before being returned.
+Currently the scheduler counts a singular course multiple times as fulfilling elective courses. This will have to
+be improved in the next submission.
+
+The course scheduler utilizes a heuristic aiming to minimize the number of potential prerequisites and the number
+of prerequisite layers. This is primarily done by taking the front value of the course designation (4 of 4260)
+which represents a general measure of prerequisite layers and summing each front value with all prerequisites of
+a disjunction. This sum provides a general idea of the required prerequisites necessary to completely fulfill the
+considered course. We therefore first consider the prerequisite set that holds the smallest sum value to try to
+minimize having to consider other potential paths (higher chance of path success).
 """
+
 from collections import namedtuple
 from enum import IntEnum
 
