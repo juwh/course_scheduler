@@ -86,7 +86,9 @@ Wait time estimate: < 2 seconds
 from collections import namedtuple
 from enum import IntEnum
 
-MAX_NUMBER_OF_TERMS = 11
+SUMMER_TERMS = False
+NUMBER_OF_SEMESTERS = 3 if SUMMER_TERMS else 2
+MAX_NUMBER_OF_TERMS = 11 if SUMMER_TERMS else 8
 MAX_CREDITS_PER_NON_SUMMER_TERM = 18
 MIN_CREDITS_PER_NON_SUMMER_TERM = 12
 MAX_CREDITS_PER_SUMMER_TERM = 6
@@ -139,14 +141,14 @@ class Term:
         self.year = year
         semesterNo = Semester(semester)
         yearNo = Year(year)
-        self.termNo = int(yearNo) * 3 + int(semesterNo)
+        self.termNo = int(yearNo) * NUMBER_OF_SEMESTERS + int(semesterNo)
 
     # Basically a second constructor
     @classmethod
     def initFromTermNo(clazz, termNo):
         # intentional integer division
-        yearNo = int(int(termNo - 1) / int(3))
-        semesterNo = termNo - (3 * yearNo)
+        yearNo = int(int(termNo - 1) / int(NUMBER_OF_SEMESTERS))
+        semesterNo = termNo - (NUMBER_OF_SEMESTERS * yearNo)
         semester = Semester(semesterNo)
         year = Year(yearNo)
         return clazz(semester, year)
@@ -306,8 +308,13 @@ def fill_terms(course_descriptions, schedule_hours, operator_stack):
     course_list = generate_course_list(operator_stack)
     for idx in range(len(schedule_hours)):
         # assign credit boundaries depending on term
-        min_credits = MIN_CREDITS_PER_SUMMER_TERM if (idx + 1) % 3 == 0 else MIN_CREDITS_PER_NON_SUMMER_TERM
-        max_credits = MAX_CREDITS_PER_SUMMER_TERM if (idx + 1) % 3 == 0 else MAX_CREDITS_PER_NON_SUMMER_TERM
+        min_credits = MIN_CREDITS_PER_NON_SUMMER_TERM
+        max_credits = MAX_CREDITS_PER_NON_SUMMER_TERM
+        if SUMMER_TERMS:
+            min_credits = MIN_CREDITS_PER_SUMMER_TERM if (idx + 1) % NUMBER_OF_SEMESTERS == 0 \
+                else MIN_CREDITS_PER_NON_SUMMER_TERM
+            max_credits = MAX_CREDITS_PER_SUMMER_TERM if (idx + 1) % NUMBER_OF_SEMESTERS == 0 \
+                else MAX_CREDITS_PER_NON_SUMMER_TERM
         if schedule_hours[idx] > 0:
             # continue to add course operator while not fulfilling constraint
             while schedule_hours[idx] < min_credits:
@@ -435,7 +442,10 @@ def apply_constraints(course_description, schedule_hours, current_term):
     # loop until out of valid terms to place
     while current_term >= 0:
         # credit hour boundary dependent on term (Summer or not)
-        max_credits = MAX_CREDITS_PER_SUMMER_TERM if (current_term + 1) % 3 == 0 else MAX_CREDITS_PER_NON_SUMMER_TERM
+        max_credits = MAX_CREDITS_PER_NON_SUMMER_TERM
+        if SUMMER_TERMS:
+            max_credits = MAX_CREDITS_PER_SUMMER_TERM if (current_term + 1) % NUMBER_OF_SEMESTERS == 0 \
+                else MAX_CREDITS_PER_NON_SUMMER_TERM
         # see if addition of course violates limit, then move to next term
         if schedule_hours[current_term] + int(course_description.credits) <= max_credits:
             for available_term in course_description.terms:
