@@ -182,10 +182,8 @@ def course_scheduler(course_descriptions, goal_conditions, initial_state):
     :param initial_state: list of courses already fulfilled, not scheduled
     :return: dictionary of scheduled courses for a solution or empty dictionary
     """
-    # initialize the tuple stack (global variable)
     tuple_stack = state_init(course_descriptions, goal_conditions, initial_state)
     final_operator_stack = []
-    # take the top tuple
     top_tuple = tuple_stack[len(tuple_stack) - 1] if len(tuple_stack) != 0 else ()
     operated_state = []
     # empty check
@@ -195,7 +193,6 @@ def course_scheduler(course_descriptions, goal_conditions, initial_state):
         final_operator_stack = top_tuple[1]
     # check if stack of states is empty (tried all options), or complete
     while operated_state:
-        # get the top course of the top state
         top_course = operated_state[len(operated_state) - 1]
         # check if the top course exists in the initial state
         if not initial_state.count(top_course):
@@ -208,16 +205,12 @@ def course_scheduler(course_descriptions, goal_conditions, initial_state):
                         # with the removal of the duplicate course, the insertion action
                         # will either place it in the same place or a new valid location
                         final_operator_stack.remove(operator)
-                # update the operator_schedule for use
                 operator_schedule = generate_operator_schedule(final_operator_stack)
-            # get a valid term for the top course
             valid_term = scheduled_term(course_descriptions, top_course, operator_schedule)
             if valid_term:
-                # data structure copies
                 operated_state_copy = operated_state.copy()
                 operated_state_copy.pop()
                 top_course_prereqs = course_descriptions[top_course].prereqs
-                # removal of the top state tuple to append expanded tuples
                 tuple_stack.pop()
                 # if there is prereq branching, we can apply a heuristic
                 if top_course_prereqs:
@@ -238,19 +231,15 @@ def course_scheduler(course_descriptions, goal_conditions, initial_state):
         else:
             # remove if course already fulfilled by initial state
             operated_state.pop()
-        # take the top tuple
         top_tuple = tuple_stack[len(tuple_stack) - 1] if len(tuple_stack) != 0 else ()
-        # take the first state
         operated_state = []
         if top_tuple:
-            # update states and operator stack
             operated_state = top_tuple[0] if len(top_tuple[0]) != 0 else []
             final_operator_stack = top_tuple[1]
     if top_tuple:
         # generates the final operator stack after filling terms to minimum credit hours
         regression_schedule_hours = generate_schedule_hours(generate_operator_schedule(final_operator_stack))
         final_operator_stack = fill_terms(course_descriptions, regression_schedule_hours, final_operator_stack)
-    # returns the dictionary output from the operator stack
     return generate_scheduler_output(final_operator_stack)
 
 
@@ -261,7 +250,8 @@ def prereq_heuristic(course_descriptions, tuple_stack, operator_stack, state, pr
     order.
     :param course_descriptions: course_descriptions: dictionary of offered Vanderbilt courses and related information
     :param tuple_stack: stack list data structure that holds tuples of the state and an associated operator stack
-    :param operator_stack: stack list data structure that holds operators representing scheduled courses of the current state
+    :param operator_stack: stack list data structure that holds operators representing scheduled
+    courses of the current state
     :param state: current state in the search being considered
     :param prerequisites: prerequisites in DNF form of the course being considered
     :param course: top course in the current state, being considered for expansion
@@ -271,12 +261,10 @@ def prereq_heuristic(course_descriptions, tuple_stack, operator_stack, state, pr
     unordered_heuristic_prereqs = []
     # per prereq disjunction
     for prereqs in prerequisites:
-        # reset our sum
         heuristic_sum = 0
         # check that the course is not a higher requirement (no front number)
         for course_tuple in prereqs:
             if not is_higher_requirement((course_tuple[0], course_tuple[1])):
-                # add front value
                 course_designation_top_value = int(course_tuple[1][0])
                 heuristic_sum += course_designation_top_value
         # add prereq with sum to be sorted by sum
@@ -300,11 +288,12 @@ def fill_terms(course_descriptions, schedule_hours, operator_stack):
     """
 
     :param course_descriptions: course_descriptions: dictionary of offered Vanderbilt courses and related information
-    :param schedule_hours: list of integers holding currently scheduled credit hours of each term associated by the index
-    :param operator_stack: stack list data structure that holds operators representing scheduled courses of the current state
+    :param schedule_hours: list of integers holding currently scheduled credit hours of each term
+    associated by the index
+    :param operator_stack: stack list data structure that holds operators representing scheduled
+    courses of the current state
     :return: updated operator stack with filler operators to fulfill credit minimum
     """
-    # generate course list to easily check if a considered course is already scheduled
     course_list = generate_course_list(operator_stack)
     for idx in range(len(schedule_hours)):
         # assign credit boundaries depending on term
@@ -334,14 +323,14 @@ def fill_terms(course_descriptions, schedule_hours, operator_stack):
 def generate_scheduler_output(operator_stack):
     """
     Takes the final operator stack, orders by term then by alphabet.
-    :param operator_stack: stack list data structure that holds operators representing scheduled courses of the current state
+    :param operator_stack: stack list data structure that holds operators representing scheduled courses
+    of the current state
     :return: solution dictionary sorted by term and alphabetically, includes prereqs
     """
     sorted_dictionary = {}
     # generate an operator schedule to organize by term
     unsorted_schedule = generate_operator_schedule(operator_stack)
     for term in unsorted_schedule:
-        # sort by alphabetical order
         sorted_term = sorted(term)
         # move to dictionary format
         for operator in sorted_term:
@@ -360,12 +349,11 @@ def state_init(course_descriptions, goal_conditions, initial_state):
     :param course_descriptions: course_descriptions: dictionary of offered Vanderbilt courses and related information
     :param goal_conditions: list of courses required in a valid schedule
     :param initial_state: list of courses already fulfilled, not scheduled
-    :return: tuple_stack with the first top course expanded in the top state and the first operator added to the operator stack
+    :return: tuple_stack with the first top course expanded in the top state and the first operator added
+    to the operator stack
     """
     tuple_stack = []
-    # per goal course
     for goal in goal_conditions:
-        # check if in initial state
         if not initial_state.count(goal):
             if course_descriptions[goal].prereqs:
                 # per prereq add a tuple instance with appropriate operator stack
@@ -435,13 +423,12 @@ def apply_constraints(course_description, schedule_hours, current_term):
     From the current latest term, this function applied the maximum credit hour constraint to find a valid term
     based on the current state of scheduled hours.
     :param course_description: course_descriptions: dictionary of offered Vanderbilt courses and related information
-    :param schedule_hours: list of integers holding currently scheduled credit hours of each term associated by the index
+    :param schedule_hours: list of integers holding currently scheduled credit hours of each term
+    associated by the index
     :param current_term: course being constrained to hour requirements
     :return: first valid term with credit hour constraints applied
     """
-    # loop until out of valid terms to place
     while current_term >= 0:
-        # credit hour boundary dependent on term (Summer or not)
         max_credits = MAX_CREDITS_PER_NON_SUMMER_TERM
         if SUMMER_TERMS:
             max_credits = MAX_CREDITS_PER_SUMMER_TERM if (current_term + 1) % NUMBER_OF_SEMESTERS == 0 \
@@ -482,10 +469,10 @@ def in_schedule(operator_schedule, course):
 def generate_schedule(operator_stack):
     """
     Constructs a list of lists of course tuples. Each term is ordered by the index of the top list.
-    :param operator_stack: stack list data structure that holds operators representing scheduled courses of the current state
+    :param operator_stack: stack list data structure that holds operators representing scheduled courses
+    of the current state
     :return: schedule (list of lists of courses) of regular tuple courses
     """
-    # list of 11 terms (lists) each containing scheduled course
     schedule = [[] for _ in range(MAX_NUMBER_OF_TERMS)]
     for operator in operator_stack:
         schedule[operator.ScheduledTerm.termNo - 1].append(operator.EFF)
@@ -495,10 +482,10 @@ def generate_schedule(operator_stack):
 def generate_operator_schedule(operator_stack):
     """
     Constructs a list of lists of operators for scheduled courses. Each term is ordered by the index of the top list.
-    :param operator_stack: stack list data structure that holds operators representing scheduled courses of the current state
+    :param operator_stack: stack list data structure that holds operators representing scheduled
+    courses of the current state
     :return: schedule (list of lists of courses) of operators
     """
-    # list of 11 terms (lists) each containing scheduled course
     schedule = [[] for _ in range(MAX_NUMBER_OF_TERMS)]
     for operator in operator_stack:
         schedule[operator.ScheduledTerm.termNo - 1].append(operator)
@@ -523,7 +510,8 @@ def generate_course_list(operator_stack):
     """
     Instead of a list of lists as with regular schedules, this function simply generates a list of currently scheduled
     courses (in operator form).
-    :param operator_stack: stack list data structure that holds operators representing scheduled courses of the current state
+    :param operator_stack: stack list data structure that holds operators representing scheduled
+    courses of the current state
     :return: plain list of courses from operator stack
     """
     course_list = []
