@@ -374,14 +374,19 @@ def state_init(course_descriptions, goal_conditions, initial_state):
                     state_instance = goal_conditions.copy()
                     state_instance.remove(goal)
                     state_instance += list(prereqs)
-                    operator = Operator(prereqs, goal, Term.initFromTermNo(MAX_NUMBER_OF_TERMS),
+                    idx = MAX_NUMBER_OF_TERMS
+                    while idx > 0:
+                        if course_descriptions[goal].terms.count(Term.initFromTermNo(idx).semester.name):
+                            break
+                        idx -= 1
+                    operator = Operator(prereqs, goal, Term.initFromTermNo(idx),
                                         course_descriptions[goal].credits)
                     operator_state_tuple = state_instance, [operator]
                     tuple_stack.append(operator_state_tuple)
             else:
-                # since this is the first step, we know we can schedule at the latest position
                 state_instance = goal_conditions.copy()
                 state_instance.remove(goal)
+
                 operator = Operator((), goal, Term.initFromTermNo(MAX_NUMBER_OF_TERMS),
                                     course_descriptions[goal].credits)
                 operator_state_tuple = state_instance, [operator]
@@ -462,6 +467,8 @@ def is_higher_requirement(course):
     :param course: course being checked if higher requirement
     :return: boolean whether course is a higher requirement type
     """
+    if course[1][len(course[1]) - 1] == 'W':
+        return not course[1][:-1].isnumeric()
     return not course[1].isnumeric()
 
 
