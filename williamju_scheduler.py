@@ -391,6 +391,7 @@ def scheduled_term(course_descriptions, scheduled_course, operator_schedule):
     :param operator_schedule: list of list of operators, each list representing a term
     :return: the valid term right behind a higher requirement or None if nonexistent
     """
+    higher_term = None
     schedule_hours = generate_schedule_hours(operator_schedule)
     # first check for prereq constraints
     for term in operator_schedule:
@@ -404,9 +405,9 @@ def scheduled_term(course_descriptions, scheduled_course, operator_schedule):
                         constrained_term = apply_constraints(course_descriptions[scheduled_course],
                                                              schedule_hours, operator_schedule.index(term))
                         if constrained_term:
-                            return Term.initFromTermNo(constrained_term)
+                            higher_term = Term.initFromTermNo(constrained_term)
                         else:
-                            return None
+                            higher_term = None
                     else:
                         constrained_term = apply_constraints(course_descriptions[scheduled_course],
                                                              schedule_hours, operator_schedule.index(term) - 1)
@@ -414,6 +415,8 @@ def scheduled_term(course_descriptions, scheduled_course, operator_schedule):
                             return Term.initFromTermNo(constrained_term)
                         else:
                             return None
+        if higher_term:
+            return higher_term
     # if no prereq constraint apply, find the first non-18+ term
     current_term = MAX_NUMBER_OF_TERMS - 1
     constrained_term = apply_constraints(course_descriptions[scheduled_course],
@@ -422,6 +425,7 @@ def scheduled_term(course_descriptions, scheduled_course, operator_schedule):
         return Term.initFromTermNo(constrained_term)
     else:
         return None
+
 
 
 def apply_constraints(course_description, schedule_hours, current_term):
