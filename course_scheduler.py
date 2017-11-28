@@ -24,15 +24,16 @@ def main(argv):
     #     if key.program == 'CS':
     #         print(key, test[key])
     #print(test[("ANTH", "4154")].prereqs)
-    #solution = williamju_scheduler.course_scheduler (test, [("CS", "2231"), ("CS", "3251"), ("CS", "statsprobability")], [('MATH', '2810'), ("MATH", "2820"), ("MATH", "3640")])
-    solution = williamju_scheduler.course_scheduler(test, [("CS", "major"), ("CS", "4269")], [])
+    solution = williamju_scheduler.course_scheduler (test, [("CS", "2231"), ("CS", "3251"), ("CS", "statsprobability")], [('MATH', '2810'), ("MATH", "2820"), ("MATH", "3640")])
+    #solution = williamju_scheduler.course_scheduler(test, [("CS", "major"), ("CS", "4269")], [])
     #solution = williamju_scheduler.course_scheduler(test, [("CS", "major"), ('JAPN', '3891')], [])
+    #solution = williamju_scheduler.course_scheduler(test, [("CS", "1101")], [])
     #solution = williamju_scheduler.course_scheduler(test, [('ANTH', '4345'), ('ARTS', '3600'), ('BME', '4500'), ('BUS', '2300'), ('CE', '3705'), ('LAT', '3140'), ('JAPN', '3891')], [])
     for course in solution:
         print(course, solution[course])
     #print(solution)
     # Prints the entire dictionary.
-    # course_dictionary.print_dict(test)
+    #course_dictionary.print_dict(test)
     # print(test[('CS', 'open3')])
     # print('Done')
 

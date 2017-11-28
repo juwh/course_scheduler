@@ -310,7 +310,8 @@ def fill_terms(course_descriptions, schedule_hours, operator_stack):
                 for course in course_descriptions:
                     course_description = course_descriptions[course]
                     if not course_list.count(course) and course_description.prereqs == () \
-                            and schedule_hours[idx] + int(course_description.credits) <= max_credits:
+                            and schedule_hours[idx] + int(course_description.credits) <= max_credits \
+                            and course_description.terms.count(Term.initFromTermNo(idx + 1).semester.name):
                         operator_add = Operator(course_description.prereqs, (course.program, course.designation),
                                                 Term.initFromTermNo(idx + 1), course_description.credits)
                         operator_stack.append(operator_add)
