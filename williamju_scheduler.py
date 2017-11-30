@@ -2,6 +2,33 @@
 Name: William Ju
 Help Declarations: Used constants and classes given via the autograder.
 
+Update 11/28/2017:
+Fixed issues found within the course_scheduler after further testing.
+
+Issues found include:
+state_init term constraint - when goal conditions were added to the operator stack, they were automatically placed
+within the final term (Senior, Spring) without checking if the course was available during that term
+fill_courses constraint - courses that were found and added to fulfill the 12 credit hour requirement were added
+without checking if the course was available during that term
+is_higher_requirement - the check for a higher requirement course would present an incorrect result when considering
+writing courses that end with 'W'
+higher requirement short circuit - if a course being added was found to be a prereq of a higher requirement, the valid
+would be returned to be the same term as the higher requirement course. This would short circuit all subsequent
+checks on courses within that term, which could include courses that also hold the course as a prereq but was not a
+higher requirement. This possibility would cause courses added to exist in the same term as courses that have it as a
+direct prereq.
+no valid course handler - if the scheduler could not find a valid schedule, instead of building from tha last
+considered operator stack, the operator stack is now cleared so that the course scheduler would return an empty
+solution.
+
+The fixed solution was tested with all tests used for the initial grading and was found to pass all tests. The only
+errors encountered were related to underfulfillment of the 12 hour credit minimum for "gap" terms (0 credit hours).
+It should also be noted that course AADS 3850 seems to be incorrectly initialized in the course dictionary as the
+credit hours is an integer rather than a string (solution output is "credits=3" instead of "credits='3'"). Only this
+particular course is affected which causes me to suspect that it is an issue within the CSV. Also reduced excessive
+inline comments within the code.
+
+Initial 10/25/2017:
 The course_scheduler function is a two part heuristic depth first regression planner. The function's primary
 operation is the generation and exploration of state paths. The states are represented as a conjunction of
 courses that must be fulfilled for the path to succeed. These states are stored as a stack to allow for natural
