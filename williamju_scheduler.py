@@ -236,6 +236,8 @@ def course_scheduler(course_descriptions, goal_conditions, initial_state):
         if top_tuple:
             operated_state = top_tuple[0] if len(top_tuple[0]) != 0 else []
             final_operator_stack = top_tuple[1]
+        else:
+            final_operator_stack = []
     if top_tuple:
         # generates the final operator stack after filling terms to minimum credit hours
         regression_schedule_hours = generate_schedule_hours(generate_operator_schedule(final_operator_stack))
@@ -331,6 +333,7 @@ def generate_scheduler_output(operator_stack):
     sorted_dictionary = {}
     # generate an operator schedule to organize by term
     unsorted_schedule = generate_operator_schedule(operator_stack)
+    #print(generate_schedule_hours(unsorted_schedule))
     for term in unsorted_schedule:
         sorted_term = sorted(term)
         # move to dictionary format
